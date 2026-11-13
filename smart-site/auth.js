@@ -52,12 +52,13 @@
       if (mode === "signup") {
         const { data, error } = await client.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.session) showWorkspace(data.session);
+        if (data.session) { showWorkspace(data.session); location.href = "./index.html"; }
         else status("حساب ایجاد شد. ایمیل خود را برای تأیید حساب بررسی کنید.", "ok");
       } else {
         const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         showWorkspace(data.session);
+        location.href = "./index.html";
       }
     } catch (error) {
       status(error.message || "عملیات ناموفق بود.", "error");
@@ -81,7 +82,8 @@
         tenant_name: name, tenant_slug: slug, tenant_locale: locale
       });
       if (error) throw error;
-      status("سازمان ایجاد شد. شناسه سازمان: " + data, "ok");
+      status("سازمان ایجاد شد. در حال ورود به فضای کاری...", "ok");
+      location.href = "./index.html";
     } catch (error) {
       status(error.message || "ایجاد سازمان ناموفق بود.", "error");
     }
