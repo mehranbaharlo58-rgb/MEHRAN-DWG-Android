@@ -52,6 +52,10 @@ The real `supabase-config.js` is intentionally not committed and is excluded by 
 
 Do not commit project secrets. Never expose the Supabase `service_role` key in browser code. The browser may use only the publishable/anon key; authorization must be enforced by RLS and trusted server-side functions.
 
+## GitHub Pages deployment
+
+A deployment workflow is included at `.github/workflows/smart-site-pages.yml`. Add the repository Actions secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY`, enable GitHub Pages with GitHub Actions as the build source, and push a change under `smart-site/` or run the workflow manually. The workflow injects the browser configuration at build time; the credential file is not committed. After the first deployment, add the published Pages URL to Supabase Authentication URL Configuration and its redirect allow-list. Apply the SQL migration to the same Supabase project before signing in.
+
 ## Important security and deployment boundary
 
 The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The PWA includes Supabase client integration, but it requires a configured Supabase project and an applied migration before live operation.
