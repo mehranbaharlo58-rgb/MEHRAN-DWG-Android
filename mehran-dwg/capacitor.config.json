@@ -1,0 +1,7 @@
+{
+  "appId":"com.mehranbaharlo.dwg",
+  "appName":"MEHRAN DWG",
+  "webDir":"dist",
+  "bundledWebRuntime":false,
+  "plugins":{"CapacitorSQLite":{"iosDatabaseLocation":"Library/CapacitorDatabase","iosIsEncryption":false,"androidIsEncryption":false}}
+}
