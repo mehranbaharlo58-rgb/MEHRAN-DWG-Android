@@ -11,7 +11,7 @@ app.innerHTML=`
 <nav class="toolbar" id="tools"><button class="tool active" data-tool="pan"><i>✥</i>جابجایی</button><button class="tool" data-tool="select"><i>⌖</i>انتخاب</button><button class="tool" data-tool="line"><i>／</i>خط</button><button class="tool" data-tool="polyline"><i>⌁</i>چندخطی</button><button class="tool" data-tool="circle"><i>◯</i>دایره</button><button class="tool" data-tool="measure"><i>↔</i>اندازه</button><button class="tool" data-tool="layers"><i>▤</i>لایه‌ها</button><button class="tool" data-tool="more"><i>＋</i>ابزارها</button></nav>
 <footer class="bottom"><span id="mode">MODEL · LOCAL</span><span id="scale">1:1</span><span id="units">واحد: متر</span></footer>
 <div class="sheet" id="sheet"><section class="panel"><div class="panelhead"><h3 id="paneltitle">منو</h3><button class="close" id="close">×</button></div><div id="panelbody"></div></section></div><div class="toast" id="toast"></div>
-<input class="fileinput" type="file" id="file" accept=".dwg,.dxf,.DWG,.DXF,application/acad,application/x-acad,application/dxf,.txt,.json">
+<input class="fileinput" type="file" id="file" accept="*/*">
 </div>`;
 const canvas=$('#cad'),ctx=canvas.getContext('2d');
 function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
