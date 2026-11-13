@@ -1,0 +1,33 @@
+name: Build MEHRAN DWG Android
+on:
+  push:
+    paths: ['mehran-dwg/**','.github/workflows/mehran-dwg-android.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm, cache-dependency-path: mehran-dwg/package-lock.json}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: android-actions/setup-android@v3
+      - run: npm install
+        working-directory: mehran-dwg
+      - run: npm run build
+        working-directory: mehran-dwg
+      - run: npx cap add android
+        working-directory: mehran-dwg
+      - run: npx cap sync android
+        working-directory: mehran-dwg
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        working-directory: mehran-dwg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mehran-dwg-debug
+          path: mehran-dwg/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
