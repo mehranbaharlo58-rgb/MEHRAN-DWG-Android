@@ -7,13 +7,22 @@ const webDb=()=>webDbPromise||=openWebDatabase();
 async function nativeDb(){
  if(!nativeDbPromise)nativeDbPromise=(async()=>{
   const {CapacitorSQLite,SQLiteConnection}=await import("@capacitor-community/sqlite");
-  const connection=new SQLiteConnection(CapacitorSQLite);
-  const name="smart_site";
-  const check=await connection.checkConnectionsConsistency();
-  const exists=await connection.isConnection(name,false);
-  const database=exists.result?await connection.retrieveConnection(name,false):await connection.createConnection(name,false,"no-encryption",1,false);
+  const connection=new SQLiteConnection(CapacitorSQLite),name="smart_site";
+  await connection.checkConnectionsConsistency();
+  const exists=(await connection.isDatabase(name)).result;
+  const hasSecret=(await connection.isSecretStored()).result;
+  if(!hasSecret&&exists)throw new Error("کلید رمزگذاری دیتابیس در دسترس نیست؛ برای جلوگیری از حذف یا خرابی اطلاعات، دیتابیس باز نشد.");
+  if(!hasSecret){
+   const bytes=crypto.getRandomValues(new Uint8Array(32));
+   const secret=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+   await connection.setEncryptionSecret(secret);
+  }
+  const isOpen=(await connection.isConnection(name,false)).result;
+  const database=isOpen?await connection.retrieveConnection(name,false):await connection.createConnection(name,true,"secret",1,false);
   await database.open();
   await database.execute("CREATE TABLE IF NOT EXISTS records (store TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(store,id)); CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
+  const encrypted=(await connection.isDatabaseEncrypted(name)).result;
+  if(!encrypted)throw new Error("رمزگذاری SQLCipher برای دیتابیس تأیید نشد.");
   return database;
  })();
  return nativeDbPromise;
