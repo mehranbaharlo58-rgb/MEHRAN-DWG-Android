@@ -99,7 +99,6 @@ create table public.issues (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (project_id, tenant_id) references public.projects(id, tenant_id) on delete cascade,
-  foreign key (tenant_id, responsible_user_id) references public.tenant_members(tenant_id, user_id) on delete set null
 );
 create index issues_tenant_project_status_idx on public.issues(tenant_id, project_id, status);
 
@@ -158,6 +157,45 @@ create table public.license_events (
   created_at timestamptz not null default now()
 );
 
+
+-- Atomic tenant bootstrap: the caller becomes the first owner.
+create or replace function public.create_tenant(
+  tenant_name text,
+  tenant_slug text,
+  tenant_locale text default 'fa'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, auth
+as $
+declare
+  new_tenant_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+  if tenant_locale not in ('fa','en') then
+    raise exception 'Unsupported locale';
+  end if;
+
+  insert into public.tenants(name, slug, default_locale)
+  values (tenant_name, lower(tenant_slug), tenant_locale)
+  returning id into new_tenant_id;
+
+  insert into public.tenant_members(tenant_id, user_id, role)
+  values (new_tenant_id, auth.uid(), 'owner');
+
+  insert into public.tenant_branding(tenant_id, display_name)
+  values (new_tenant_id, tenant_name);
+
+  return new_tenant_id;
+end;
+$;
+
+revoke all on function public.create_tenant(text, text, text) from public;
+grant execute on function public.create_tenant(text, text, text) to authenticated;
+
 -- Security-definer helpers avoid recursive RLS evaluation on tenant_members.
 create or replace function public.is_tenant_member(target_tenant uuid)
 returns boolean
@@ -211,7 +249,7 @@ create policy "branding_select_member" on public.tenant_branding for select to a
 create policy "branding_manage_admin" on public.tenant_branding for all to authenticated using (public.has_tenant_role(tenant_id, array['owner','admin']::public.tenant_role[])) with check (public.has_tenant_role(tenant_id, array['owner','admin']::public.tenant_role[]));
 
 create policy "members_select_same_tenant" on public.tenant_members for select to authenticated using (public.is_tenant_member(tenant_id));
-create policy "members_manage_admin" on public.tenant_members for all to authenticated using (public.has_tenant_role(tenant_id, array['owner','admin']::public.tenant_role[])) with check (public.has_tenant_role(tenant_id, array['owner','admin']::public.tenant_role[]));
+create policy "members_manage_owner" on public.tenant_members for all to authenticated using (public.has_tenant_role(tenant_id, array['owner']::public.tenant_role[])) with check (public.has_tenant_role(tenant_id, array['owner']::public.tenant_role[]));
 
 create policy "projects_select_member" on public.projects for select to authenticated using (public.is_tenant_member(tenant_id));
 create policy "projects_insert_manager" on public.projects for insert to authenticated with check (public.has_tenant_role(tenant_id, array['owner','admin','project_manager']::public.tenant_role[]));
