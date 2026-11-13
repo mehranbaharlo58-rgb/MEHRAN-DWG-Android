@@ -1,71 +1,35 @@
-# SMART SITE
+# SMART SITE — Local-first construction operations
 
-Bilingual-ready construction operations SaaS (fa/en), industrial UI direction, organization white-labeling, and hybrid licensing model.
+SMART SITE is being built as an offline-first construction site operations app. The device-local database is the source of truth. Core workflows do not require an account, cloud backend, or internet connection after the app shell has been installed and cached.
 
-## Current repository status
+## Local data architecture
 
-### Connected application layer
-- Responsive Persian-first PWA interface
-- Supabase Auth session enforcement and multi-tenant organization selector
-- Tenant-scoped projects, issues, daily reports, and branding read/write flows
-- Database RLS remains the authorization boundary; client-side tenant filters are additional scoping only
-- JSON export for the selected tenant
+- Browser/PWA database: IndexedDB database named smart-site-local.
+- Stores: projects, issues, daily reports, and local metadata/branding.
+- Data remains in the installed browser/PWA profile on that device.
+- Service worker caches the app shell for offline relaunch.
+- JSON backup export is available from the app header.
+- The current local-first runtime does not require a Supabase client.
 
-### Database foundation (Supabase/PostgreSQL)
-Migration: `supabase/migrations/20261113000100_smart_site_foundation.sql`
+## PWA vs native APK
 
-Includes:
-- Organizations (tenants), tenant branding, and membership roles
-- Projects and project team membership
-- Issues/blockers and daily site reports
-- Audit log foundation
-- Private platform-managed license and license-event tables
-- Tenant-scoped Row Level Security policies
-- Atomic `create_tenant(...)` bootstrap function; authenticated caller becomes the first owner
+The current deliverable is an installable PWA using IndexedDB. This is a real device-local database and works offline after the first successful installation/cache. It is not SQLite yet. If the commercial release must be a native Android APK, the next packaging stage should use Capacitor with a native SQLite adapter and encrypted database support. The data layer should keep the same repository API so the UI does not need a rewrite.
 
-## Authentication and organization onboarding scaffold
+## Data safety
 
-The repository now includes `auth.html`, `auth.js`, and `supabase-config.example.js`.
+Browser storage can be cleared by the user or operating system. Storage persistence is requested where supported but cannot be guaranteed on every device. Export regular backups and store them somewhere safe. A single device copy is not a backup.
 
-1. Copy `supabase-config.example.js` to `supabase-config.js`.
-2. Set `supabaseUrl` and the project's publishable/anon key in that local config file.
-3. Open `auth.html` through a local/static web server.
-4. Enable Email authentication in Supabase. If email confirmation is enabled, confirm the signup email before signing in.
-5. After signing in, create an organization. The authenticated user is assigned the initial owner role through the database RPC.
+## Offline installation and test
 
-The real `supabase-config.js` is intentionally not committed and is excluded by the repository `.gitignore`. The browser key is public by design; database RLS is the security boundary.
+1. Open the deployed app once while connected to the internet.
+2. Install it from the browser's Install app / Add to Home Screen command.
+3. Open the installed app, create a project, issue, and daily report.
+4. Enable airplane mode and close/reopen the app.
+5. Verify records remain available and new records can still be added.
+6. Export a JSON backup while offline.
 
-## Apply the database migration
+## Current scope and next production work
 
-1. Create a Supabase project.
-2. Install the Supabase CLI and authenticate.
-3. Link the local project:
-   ```bash
-   supabase login
-   supabase link --project-ref YOUR_PROJECT_REF
-   ```
-4. From the repository root, apply migrations:
-   ```bash
-   supabase db push
-   ```
-   Or run the migration SQL in the Supabase SQL Editor for a first manual setup.
+Current local-first build includes projects, issues, daily reports, organization branding metadata, dashboard, offline app-shell cache, and JSON export. Not yet implemented: encrypted backup/restore UI, attachments/photos/drawings, native SQLite APK packaging, signed offline license activation, multi-device synchronization, and bilingual EN interface.
 
-Do not commit project secrets. Never expose the Supabase `service_role` key in browser code. The browser may use only the publishable/anon key; authorization must be enforced by RLS and trusted server-side functions.
-
-## GitHub Pages deployment
-
-A deployment workflow is included at `.github/workflows/smart-site-pages.yml`. Add the repository Actions secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY`, enable GitHub Pages with GitHub Actions as the build source, and push a change under `smart-site/` or run the workflow manually. The workflow injects the browser configuration at build time; the credential file is not committed. After the first deployment, add the published Pages URL to Supabase Authentication URL Configuration and its redirect allow-list. Apply the SQL migration to the same Supabase project before signing in.
-
-## Important security and deployment boundary
-
-The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The PWA includes Supabase client integration, but it requires a configured Supabase project and an applied migration before live operation.
-
-Before production use, implement and test:
-- Account recovery and invitation workflow
-- Server-side license validation, platform-owner console, and subscription operations
-- Storage policies for drawings, photos, and attachments
-- Audit event generation for sensitive mutations
-- Automated RLS isolation and privilege-escalation tests
-- Backup/restore, monitoring, rate limits, and production deployment
-
-Do not use the application for live project data until the migration has been applied, RLS policies have been tested, and a production deployment has been configured.
+For an Android production APK, implement Capacitor + SQLite, device-level encryption/key management, explicit backup/restore, migration tests, and signed offline license files. Cloud sync should remain optional and must never block local operations.
