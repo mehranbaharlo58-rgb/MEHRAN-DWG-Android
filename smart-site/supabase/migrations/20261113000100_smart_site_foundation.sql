@@ -74,13 +74,14 @@ create table public.projects (
 create index projects_tenant_status_idx on public.projects(tenant_id, status);
 
 create table public.project_members (
-  project_id uuid not null references public.projects(id) on delete cascade,
+  project_id uuid not null,
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   project_role text not null default 'member' check (project_role in ('manager','engineer','supervisor','member','viewer')),
   added_at timestamptz not null default now(),
   primary key (project_id, user_id),
-  foreign key (tenant_id, user_id) references public.tenant_members(tenant_id, user_id) on delete cascade
+  foreign key (tenant_id, user_id) references public.tenant_members(tenant_id, user_id) on delete cascade,
+  foreign key (project_id, tenant_id) references public.projects(id, tenant_id) on delete cascade
 );
 create index project_members_tenant_user_idx on public.project_members(tenant_id, user_id);
 
