@@ -54,7 +54,7 @@ Do not commit project secrets. Never expose the Supabase `service_role` key in b
 
 ## Important security and deployment boundary
 
-The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The PWA now contains Supabase client integration, but it requires a configured Supabase project and an applied migration before live operation.
+The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The PWA includes Supabase client integration, but it requires a configured Supabase project and an applied migration before live operation.
 
 Before production use, implement and test:
 - Account recovery and invitation workflow
@@ -64,4 +64,4 @@ Before production use, implement and test:
 - Automated RLS isolation and privilege-escalation tests
 - Backup/restore, monitoring, rate limits, and production deployment
 
-Never store sensitive project information in the current front-end prototype.
+Do not use the application for live project data until the migration has been applied, RLS policies have been tested, and a production deployment has been configured.
