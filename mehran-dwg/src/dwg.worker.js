@@ -65,7 +65,9 @@ self.onmessage = async (event) => {
     try { svg = engine.dwg_to_svg(database) || ''; } catch (e) { console.warn('SVG preview unavailable', e); }
     const entities = database.entities.map(toViewerEntity).filter(Boolean);
     const layers = [...new Set(database.entities.map(e => e.layer || '0'))].map(name => ({ name, visible: true }));
-    const nativeDatabase = JSON.parse(JSON.stringify(database));
+    // DwgDatabase may contain cyclic references; do not JSON-stringify it in the parser worker.
+    // Keep the original DWG untouched until a safe native DWG writer is implemented.
+    const nativeDatabase = null;
     const totalEntities = database.entities.length;
     const unsupportedEntities = totalEntities - entities.length;
     engine.dwg_free(dwgPointer);
