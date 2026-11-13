@@ -68,6 +68,7 @@ create table public.projects (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (tenant_id, code),
+  unique (id, tenant_id),
   check (planned_finish is null or planned_start is null or planned_finish >= planned_start)
 );
 create index projects_tenant_status_idx on public.projects(tenant_id, status);
@@ -98,7 +99,7 @@ create table public.issues (
   created_by uuid not null default auth.uid() references auth.users(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  foreign key (project_id, tenant_id) references public.projects(id, tenant_id) on delete cascade,
+  foreign key (project_id, tenant_id) references public.projects(id, tenant_id) on delete cascade
 );
 create index issues_tenant_project_status_idx on public.issues(tenant_id, project_id, status);
 
