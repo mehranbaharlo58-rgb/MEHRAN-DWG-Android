@@ -52,7 +52,7 @@
       if (mode === "signup") {
         const { data, error } = await client.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.session) { showWorkspace(data.session); location.href = "./index.html"; }
+        if (data.session) showWorkspace(data.session);
         else status("حساب ایجاد شد. ایمیل خود را برای تأیید حساب بررسی کنید.", "ok");
       } else {
         const { data, error } = await client.auth.signInWithPassword({ email, password });
