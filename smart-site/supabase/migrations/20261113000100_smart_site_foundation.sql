@@ -170,7 +170,7 @@ returns uuid
 language plpgsql
 security definer
 set search_path = public, auth
-as $
+as $$
 declare
   new_tenant_id uuid;
 begin
@@ -193,7 +193,7 @@ begin
 
   return new_tenant_id;
 end;
-$;
+$$;
 
 revoke all on function public.create_tenant(text, text, text) from public;
 grant execute on function public.create_tenant(text, text, text) to authenticated;
