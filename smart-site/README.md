@@ -4,11 +4,12 @@ Bilingual-ready construction operations SaaS (fa/en), industrial UI direction, o
 
 ## Current repository status
 
-### Front-end prototype
+### Connected application layer
 - Responsive Persian-first PWA interface
-- Project portfolio, progress, issues/blockers, and daily reports
-- Demonstration branding and license screens
-- Browser-local demo data only; not connected to a production API
+- Supabase Auth session enforcement and multi-tenant organization selector
+- Tenant-scoped projects, issues, daily reports, and branding read/write flows
+- Database RLS remains the authorization boundary; client-side tenant filters are additional scoping only
+- JSON export for the selected tenant
 
 ### Database foundation (Supabase/PostgreSQL)
 Migration: `supabase/migrations/20261113000100_smart_site_foundation.sql`
@@ -32,7 +33,7 @@ The repository now includes `auth.html`, `auth.js`, and `supabase-config.example
 4. Enable Email authentication in Supabase. If email confirmation is enabled, confirm the signup email before signing in.
 5. After signing in, create an organization. The authenticated user is assigned the initial owner role through the database RPC.
 
-The real `supabase-config.js` is intentionally not committed. Add it to `.gitignore` before local development if you store project-specific values there. The browser key is public by design; database RLS is the security boundary.
+The real `supabase-config.js` is intentionally not committed and is excluded by the repository `.gitignore`. The browser key is public by design; database RLS is the security boundary.
 
 ## Apply the database migration
 
@@ -53,12 +54,11 @@ Do not commit project secrets. Never expose the Supabase `service_role` key in b
 
 ## Important security and deployment boundary
 
-The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The existing PWA still uses browser localStorage and does not yet authenticate or read/write these tables.
+The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The PWA now contains Supabase client integration, but it requires a configured Supabase project and an applied migration before live operation.
 
 Before production use, implement and test:
-- Supabase Auth integration and account recovery
-- Tenant selection and membership onboarding
-- Server-side license validation and platform-owner operations
+- Account recovery and invitation workflow
+- Server-side license validation, platform-owner console, and subscription operations
 - Storage policies for drawings, photos, and attachments
 - Audit event generation for sensitive mutations
 - Automated RLS isolation and privilege-escalation tests
