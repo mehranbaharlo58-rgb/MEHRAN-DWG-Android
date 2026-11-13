@@ -1,0 +1,7 @@
+{
+  "appId": "com.mehranbaharlo.smartsite",
+  "appName": "SMART SITE",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": { "androidScheme": "https" }
+}
