@@ -1,29 +1,55 @@
-# SMART SITE — Prototype v0.1
+# SMART SITE
 
-A Persian-first, industrial-style responsive PWA interface for construction site operations.
+Bilingual-ready construction operations SaaS (fa/en), industrial UI direction, organization white-labeling, and hybrid licensing model.
 
-## Included
-- Dashboard and project portfolio
-- Project registration and progress tracking
-- Issue / blocker log with owner, priority and close-out status
-- Daily site reports
-- Basic organization branding preview
-- JSON data export
-- Installable PWA shell and basic offline cache
+## Current repository status
 
-## Run locally
-Serve this directory from any static HTTP server and open `index.html`. For example:
+### Front-end prototype
+- Responsive Persian-first PWA interface
+- Project portfolio, progress, issues/blockers, and daily reports
+- Demonstration branding and license screens
+- Browser-local demo data only; not connected to a production API
 
-```bash
-python -m http.server 8080
-```
+### Database foundation (Supabase/PostgreSQL)
+Migration: `supabase/migrations/20261113000100_smart_site_foundation.sql`
 
-Then visit `http://localhost:8080/smart-site/`.
+Includes:
+- Organizations (tenants), tenant branding, and membership roles
+- Projects and project team membership
+- Issues/blockers and daily site reports
+- Audit log foundation
+- Private platform-managed license and license-event tables
+- Tenant-scoped Row Level Security policies
+- Atomic `create_tenant(...)` bootstrap function; authenticated caller becomes the first owner
 
-## Important implementation boundary
-This is a front-end prototype only. Records are stored in the browser's localStorage and are not synchronized between users or devices. The branding and Hybrid license screens are demonstrative only.
+## Apply the database migration
 
-Not implemented: authentication, multi-tenant isolation, server database, role-based access control, audit trail, secure license signing/validation, billing, file storage, custom domains, backups, or production security controls. Do not use it as a production system or store sensitive project data in it.
+1. Create a Supabase project.
+2. Install the Supabase CLI and authenticate.
+3. Link the local project:
+   ```bash
+   supabase login
+   supabase link --project-ref YOUR_PROJECT_REF
+   ```
+4. From the repository root, apply migrations:
+   ```bash
+   supabase db push
+   ```
+   Or run the migration SQL in the Supabase SQL Editor for a first manual setup.
 
-## Next engineering milestone
-Build the production foundation: API + PostgreSQL, tenant-scoped authorization, server-side RBAC, secure license service, object storage, audit events, and automated tests.
+Do not commit project secrets. Never expose the Supabase `service_role` key in browser code. The browser may use only the publishable/anon key; authorization must be enforced by RLS and trusted server-side functions.
+
+## Important security and deployment boundary
+
+The migration is a database foundation, not a deployed backend. It has not yet been applied to a live Supabase project or tested against a live instance. The existing PWA still uses browser localStorage and does not yet authenticate or read/write these tables.
+
+Before production use, implement and test:
+- Supabase Auth integration and account recovery
+- Tenant selection and membership onboarding
+- Server-side license validation and platform-owner operations
+- Storage policies for drawings, photos, and attachments
+- Audit event generation for sensitive mutations
+- Automated RLS isolation and privilege-escalation tests
+- Backup/restore, monitoring, rate limits, and production deployment
+
+Never store sensitive project information in the current front-end prototype.
