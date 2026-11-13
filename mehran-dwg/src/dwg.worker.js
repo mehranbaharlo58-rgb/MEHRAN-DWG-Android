@@ -90,7 +90,7 @@ function toViewerEntity(entity) {
       };
     case 'LWPOLYLINE': {
       const points = verticesOf(entity);
-      return { ...base, type, points, closed: (num(entity.flag) & 512) !== 0 || Boolean(entity.closed || entity.isClosed) };
+      return { ...base, type, points, closed: (num(entity.flag) & 1) !== 0 || Boolean(entity.closed || entity.isClosed) };
     }
     case 'POLYLINE2D':
     case 'POLYLINE3D': {
