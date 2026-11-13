@@ -103,7 +103,7 @@ document.addEventListener("click",async e=>{
 $("#quickAdd").onclick=()=>modal("projectModal");
 $("#projectForm").addEventListener("submit",async e=>{
   e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
-  try{await submitForm(e.target,"projects",{name:d.name,client_name:d.client||null,location:d.manager||null,progress:Math.min(100,Math.max(0,Number(d.progress)||0)),status:"active"});}catch(err){notify(err.message,true);}
+  try{await submitForm(e.target,"projects",{name:d.name,client_name:d.client||null,location:d.location||null,progress:Math.min(100,Math.max(0,Number(d.progress)||0)),status:"active"});}catch(err){notify(err.message,true);}
 });
 $("#issueForm").addEventListener("submit",async e=>{
   e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
