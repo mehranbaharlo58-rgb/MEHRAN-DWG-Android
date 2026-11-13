@@ -34,10 +34,62 @@ function executeCommand(raw){const parts=String(raw||'').trim().split(/\s+/),cmd
 function draw(){if(!ctx)return;const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0b1218';ctx.fillRect(0,0,w,h);const step=Math.max(18,50*state.scale);ctx.strokeStyle='#172630';ctx.lineWidth=1;ctx.beginPath();for(let x=(w/2+state.offset.x)%step;x<w;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,h)}for(let y=(h/2+state.offset.y)%step;y<h;y+=step){ctx.moveTo(0,y);ctx.lineTo(w,y)}ctx.stroke();ctx.strokeStyle='#3d5664';ctx.beginPath();ctx.moveTo(0,h/2+state.offset.y);ctx.lineTo(w,h/2+state.offset.y);ctx.moveTo(w/2+state.offset.x,0);ctx.lineTo(w/2+state.offset.x,h);ctx.stroke();if(state.svgImage&&state.svgBounds){const b=state.svgBounds,s=Math.min((w-36)/Math.max(1,b.width),(h-36)/Math.max(1,b.height))*state.scale;ctx.save();ctx.translate(w/2+state.offset.x,h/2+state.offset.y);ctx.scale(s,s);ctx.drawImage(state.svgImage,-(b.x+b.width/2),-(b.y+b.height/2),b.width,b.height);ctx.restore()}if(state.draftPoints.length){ctx.strokeStyle='#39c4d8';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();state.draftPoints.forEach((v,i)=>{const p=screen(v);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.stroke();ctx.setLineDash([])}for(let ei=0;ei<state.entities.length;ei++){const e=state.entities[ei];if(e.layer&&!state.layers.find(l=>l.name===e.layer)?.visible)continue;ctx.strokeStyle=state.selectedIndices.includes(ei)?'#f4c95d':(e.color||'#d5e0e7');ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1.5;const a=e=>screen(e);if(e.type==='LINE'){const p=a(e.start),q=a(e.end);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}else if(e.type==='CIRCLE'){const p=a(e.center);ctx.beginPath();ctx.arc(p.x,p.y,Math.abs(e.radius*state.scale),0,Math.PI*2);ctx.stroke()}else if(e.type==='ARC'){const p=a(e.center);ctx.beginPath();ctx.arc(p.x,p.y,Math.abs(e.radius*state.scale),-(e.endAngle||0)*Math.PI/180,-(e.startAngle||0)*Math.PI/180,true);ctx.stroke()}else if(e.type==='ELLIPSE'){const p=a(e.center);ctx.beginPath();ctx.ellipse(p.x,p.y,Math.abs(e.majorAxis*state.scale),Math.abs(e.minorAxis*state.scale),-(e.rotation||0),0,Math.PI*2);ctx.stroke()}else if(e.type==='LWPOLYLINE'||e.type==='POLYLINE'){ctx.beginPath();e.points.forEach((v,i)=>{const p=a(v);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});if(e.closed)ctx.closePath();ctx.stroke()}else if(e.type==='POINT'){const p=a(e.point);ctx.fillRect(p.x-2,p.y-2,4,4)}else if(e.type==='TEXT'){const p=a(e.point);ctx.font='12px Tahoma';ctx.fillText(e.text,p.x,p.y)}}if(state.snapIndicator){const q=screen(state.snapIndicator.point);ctx.strokeStyle='#f4c95d';ctx.fillStyle='#f4c95d';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(q.x,q.y,6,0,Math.PI*2);ctx.stroke();ctx.fillRect(q.x-2,q.y-2,4,4);ctx.font='10px Tahoma';ctx.fillText(state.snapIndicator.type,q.x+9,q.y-8)}}
 function setSvgPreview(svg){if(state.svgUrl){URL.revokeObjectURL(state.svgUrl);state.svgUrl=null}state.svgPreview=svg||null;state.svgImage=null;state.svgBounds=null;if(!svg)return;try{const doc=new DOMParser().parseFromString(svg,'image/svg+xml');const root=doc.documentElement;const vb=(root.getAttribute('viewBox')||'').trim().split(/[ ,]+/).map(Number);let bounds;if(vb.length===4&&vb.every(Number.isFinite))bounds={x:vb[0],y:vb[1],width:vb[2],height:vb[3]};else bounds={x:0,y:0,width:Number(root.getAttribute('width'))||1000,height:Number(root.getAttribute('height'))||1000};if(!(bounds.width>0&&bounds.height>0))return;state.svgBounds=bounds;const blob=new Blob([svg],{type:'image/svg+xml'});state.svgUrl=URL.createObjectURL(blob);const image=new Image();image.onload=()=>{state.svgImage=image;draw()};image.onerror=()=>toast('پیش‌نمایش کامل DWG بارگذاری نشد؛ نمایش برداری محدود فعال است');image.src=state.svgUrl}catch(e){console.warn('Invalid SVG preview',e)}}
 let gesture=null,lastTap=null;
-canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);const p=localPoint(e);gesture={x:e.clientX,y:e.clientY,local:p,ox:state.offset.x,oy:state.offset.y,start:world(p),moved:false}});
-canvas.addEventListener('pointermove',e=>{if(!gesture){const raw=world(localPoint(e)),snap=snapPoint(raw),p=snap.point;state.snapIndicator=snap.type?snap:null;$('#coords').textContent='X: '+p.x.toFixed(3)+' · Y: '+p.y.toFixed(3)+(snap.type?' · '+snap.type:'');draw();return}const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;if(Math.abs(dx)+Math.abs(dy)>4)gesture.moved=true;if(state.tool==='pan'){state.offset.x=gesture.ox+dx;state.offset.y=gesture.oy+dy;draw()}});
-canvas.addEventListener('pointerup',e=>{if(!gesture)return;let p=world(localPoint(e));if(!gesture.moved){const snap=snapPoint(p);p=snap.point;state.snapIndicator=snap.type?snap:null;const orthoOrigin=lastTap||state.draftPoints[state.draftPoints.length-1];if(state.orthoEnabled&&orthoOrigin)p=constrainPoint(orthoOrigin,p);if(state.tool==='line'){if(!lastTap){lastTap=p;toast('نقطه شروع خط انتخاب شد')}else{addEntity({type:'LINE',start:lastTap,end:p,layer:'0'});lastTap=null}}else if(state.tool==='circle'){if(!lastTap){lastTap=p;toast('مرکز دایره انتخاب شد')}else{addEntity({type:'CIRCLE',center:lastTap,radius:Math.hypot(p.x-lastTap.x,p.y-lastTap.y),layer:'0'});lastTap=null}}else if(state.tool==='rectangle'){if(!lastTap){lastTap=p;toast('گوشه اول مستطیل را انتخاب کنید')}else{const a=lastTap,b=p;addEntity({type:'LWPOLYLINE',points:[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}],closed:true,layer:'0'});lastTap=null}}else if(state.tool==='polyline'){state.draftPoints.push(p);draw();toast('نقطه چندخطی ثبت شد؛ برای پایان ابزار انتخاب را بزنید');}else if(state.tool==='measure'){const idx=hitTest(p),target=idx>=0?state.entities[idx]:null;if(target?.points?.length&&target.closed){const m=polylineMetrics(target.points,true);toast('مساحت: '+m.area.toFixed(3)+' · محیط: '+m.perimeter.toFixed(3)+' واحد');lastTap=null}else if(!lastTap){lastTap=p;toast('نقطه اول اندازه‌گیری انتخاب شد')}else{const d=Math.hypot(p.x-lastTap.x,p.y-lastTap.y);toast('فاصله: '+d.toFixed(3)+' واحد');lastTap=null}}}if(!gesture.moved&&state.tool==='select'){const idx=hitTest(p);state.selected=idx;if(idx>=0)editEntity(idx);else toast('موجودیتی در این نقطه پیدا نشد');draw()}gesture=null});
-canvas.addEventListener('wheel',e=>{e.preventDefault();const old=state.scale;state.scale=Math.max(.08,Math.min(30,state.scale*(e.deltaY<0?1.12:.89)));draw();$('#scale').textContent=state.scale.toFixed(2)+'x'},{passive:false});
+const activePointers=new Map();
+let pinchGesture=null;
+const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+const pointerDistance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function beginPinch(){const pts=[...activePointers.values()];if(pts.length<2)return;const mid=midpoint(pts[0],pts[1]),anchor=world(mid);pinchGesture={distance:Math.max(1,pointerDistance(pts[0],pts[1])),scale:state.scale,anchor,mid};gesture=null}
+canvas.addEventListener('pointerdown',e=>{
+  canvas.setPointerCapture(e.pointerId);
+  const p=localPoint(e);activePointers.set(e.pointerId,p);
+  if(activePointers.size>=2){beginPinch();return}
+  gesture={x:e.clientX,y:e.clientY,local:p,ox:state.offset.x,oy:state.offset.y,start:world(p),moved:false};
+});
+canvas.addEventListener('pointermove',e=>{
+  if(activePointers.has(e.pointerId))activePointers.set(e.pointerId,localPoint(e));
+  if(activePointers.size>=2){
+    const pts=[...activePointers.values()],mid=midpoint(pts[0],pts[1]);
+    if(!pinchGesture)beginPinch();
+    if(pinchGesture){
+      const ratio=pointerDistance(pts[0],pts[1])/pinchGesture.distance;
+      state.scale=Math.max(.04,Math.min(80,pinchGesture.scale*ratio));
+      state.offset.x=mid.x-canvas.clientWidth/2-pinchGesture.anchor.x*state.scale;
+      state.offset.y=mid.y-canvas.clientHeight/2+pinchGesture.anchor.y*state.scale;
+      $('#scale').textContent=state.scale.toFixed(2)+'x';draw();
+    }
+    return;
+  }
+  if(!gesture){const raw=world(localPoint(e)),snap=snapPoint(raw),p=snap.point;state.snapIndicator=snap.type?snap:null;$('#coords').textContent='X: '+p.x.toFixed(3)+' · Y: '+p.y.toFixed(3)+(snap.type?' · '+snap.type:'');draw();return}
+  const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
+  if(Math.abs(dx)+Math.abs(dy)>4)gesture.moved=true;
+  if(state.tool==='pan'){state.offset.x=gesture.ox+dx;state.offset.y=gesture.oy+dy;draw()}
+});
+canvas.addEventListener('pointerup',e=>{
+  const wasPinching=activePointers.size>=2;
+  activePointers.delete(e.pointerId);
+  if(wasPinching){pinchGesture=null;gesture=null;return}
+  if(!gesture)return;
+  let p=world(localPoint(e));
+  if(!gesture.moved){
+    const snap=snapPoint(p);p=snap.point;state.snapIndicator=snap.type?snap:null;
+    const orthoOrigin=lastTap||state.draftPoints[state.draftPoints.length-1];
+    if(state.orthoEnabled&&orthoOrigin)p=constrainPoint(orthoOrigin,p);
+    if(state.tool==='line'){if(!lastTap){lastTap=p;toast('نقطه شروع خط انتخاب شد')}else{addEntity({type:'LINE',start:lastTap,end:p,layer:'0'});lastTap=null}}
+    else if(state.tool==='circle'){if(!lastTap){lastTap=p;toast('مرکز دایره انتخاب شد')}else{addEntity({type:'CIRCLE',center:lastTap,radius:Math.hypot(p.x-lastTap.x,p.y-lastTap.y),layer:'0'});lastTap=null}}
+    else if(state.tool==='rectangle'){if(!lastTap){lastTap=p;toast('گوشه اول مستطیل را انتخاب کنید')}else{const a=lastTap,b=p;addEntity({type:'LWPOLYLINE',points:[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}],closed:true,layer:'0'});lastTap=null}}
+    else if(state.tool==='polyline'){state.draftPoints.push(p);draw();toast('نقطه چندخطی ثبت شد؛ برای پایان ابزار انتخاب را بزنید')}
+    else if(state.tool==='measure'){const idx=hitTest(p),target=idx>=0?state.entities[idx]:null;if(target?.points?.length&&target.closed){const m=polylineMetrics(target.points,true);toast('مساحت: '+m.area.toFixed(3)+' · محیط: '+m.perimeter.toFixed(3)+' واحد');lastTap=null}else if(!lastTap){lastTap=p;toast('نقطه اول اندازه‌گیری انتخاب شد')}else{const d=Math.hypot(p.x-lastTap.x,p.y-lastTap.y);toast('فاصله: '+d.toFixed(3)+' واحد');lastTap=null}}
+    if(state.tool==='select'){const idx=hitTest(p);state.selected=idx;if(idx>=0)editEntity(idx);else toast('موجودیتی در این نقطه پیدا نشد');draw()}
+  }
+  gesture=null;
+});
+canvas.addEventListener('pointercancel',e=>{activePointers.delete(e.pointerId);gesture=null;pinchGesture=null});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();const anchor=world(localPoint(e)),old=state.scale;
+  state.scale=Math.max(.04,Math.min(80,old*(e.deltaY<0?1.12:.89)));
+  const p=localPoint(e);state.offset.x=p.x-canvas.clientWidth/2-anchor.x*state.scale;state.offset.y=p.y-canvas.clientHeight/2+anchor.y*state.scale;
+  draw();$('#scale').textContent=state.scale.toFixed(2)+'x';
+},{passive:false});
 
 function segmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)}
 function polylineMetrics(points,closed){let area=0,perimeter=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];if(i<points.length-1||closed)perimeter+=Math.hypot(b.x-a.x,b.y-a.y);if(closed)area+=a.x*b.y-b.x*a.y}return{area:Math.abs(area)/2,perimeter}}
