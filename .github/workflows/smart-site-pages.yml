@@ -1,0 +1,62 @@
+name: Deploy SMART SITE PWA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "smart-site/**"
+      - ".github/workflows/smart-site-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: smart-site-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL repository secret" && exit 1)
+          test -n "$SUPABASE_ANON_KEY" || (echo "Missing SUPABASE_ANON_KEY repository secret" && exit 1)
+          case "$SUPABASE_URL" in https://*.supabase.co) ;; *) echo "SUPABASE_URL must be a Supabase HTTPS project URL"; exit 1;; esac
+
+      - name: Generate browser configuration
+        working-directory: smart-site
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cat > supabase-config.js <<EOF
+          window.SMART_SITE_CONFIG = {
+            supabaseUrl: "$SUPABASE_URL",
+            supabaseAnonKey: "$SUPABASE_ANON_KEY"
+          };
+          EOF
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: smart-site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
