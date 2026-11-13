@@ -1,0 +1,13 @@
+{
+  "name": "SMART SITE - Construction Operations",
+  "short_name": "SMART SITE",
+  "description": "Industrial construction site operations prototype",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1117",
+  "theme_color": "#111820",
+  "icons": []
+}
