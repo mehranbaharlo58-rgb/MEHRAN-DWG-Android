@@ -22,6 +22,18 @@ Includes:
 - Tenant-scoped Row Level Security policies
 - Atomic `create_tenant(...)` bootstrap function; authenticated caller becomes the first owner
 
+## Authentication and organization onboarding scaffold
+
+The repository now includes `auth.html`, `auth.js`, and `supabase-config.example.js`.
+
+1. Copy `supabase-config.example.js` to `supabase-config.js`.
+2. Set `supabaseUrl` and the project's publishable/anon key in that local config file.
+3. Open `auth.html` through a local/static web server.
+4. Enable Email authentication in Supabase. If email confirmation is enabled, confirm the signup email before signing in.
+5. After signing in, create an organization. The authenticated user is assigned the initial owner role through the database RPC.
+
+The real `supabase-config.js` is intentionally not committed. Add it to `.gitignore` before local development if you store project-specific values there. The browser key is public by design; database RLS is the security boundary.
+
 ## Apply the database migration
 
 1. Create a Supabase project.
