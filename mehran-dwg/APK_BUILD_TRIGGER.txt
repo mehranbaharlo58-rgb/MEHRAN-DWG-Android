@@ -1,0 +1,1 @@
+MEHRAN DWG Android APK build trigger. Local-first drawing storage and full-screen mobile UI source is in this directory.
