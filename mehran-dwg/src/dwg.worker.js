@@ -27,6 +27,16 @@ const colorHex = (value) => {
   if (!Number.isFinite(Number(value))) return undefined;
   return '#' + (Number(value) & 0xffffff).toString(16).padStart(6, '0');
 };
+function bufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, bytes.length)));
+  }
+  return btoa(binary);
+}
+
 const verticesOf = (entity) => {
   const vertices = entity.vertices || entity.points || [];
   return Array.isArray(vertices) ? vertices.map(v => point(v.location || v.point || v)) : [];
@@ -146,6 +156,7 @@ self.onmessage = async (event) => {
 
     self.postMessage({
       id, ok: true, fileName, entities, layers, nativeDatabase: null, svg,
+      sourceDwgBase64: bufferToBase64(buffer),
       totalEntities, renderedEntities: entities.length, unsupportedEntities,
       unknownEntityCount: converted?.stats?.unknownEntityCount || 0
     });
