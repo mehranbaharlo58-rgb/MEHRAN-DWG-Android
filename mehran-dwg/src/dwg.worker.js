@@ -3,6 +3,7 @@
  * LibreDWG WebAssembly assets are bundled locally for offline use.
  */
 import { Dwg_File_Type, LibreDwg } from '@mlightcad/libredwg-web';
+import { ENGINE_DESCRIPTOR } from './engine/contract.js';
 
 let enginePromise;
 function getEngine() {
@@ -155,7 +156,7 @@ self.onmessage = async (event) => {
     dwgPointer = null;
 
     self.postMessage({
-      id, ok: true, fileName, entities, layers, nativeDatabase: null, svg,
+      id, ok: true, fileName, entities, layers, nativeDatabase: null, svg, engine: ENGINE_DESCRIPTOR,
       sourceDwgBase64: bufferToBase64(buffer),
       totalEntities, renderedEntities: entities.length, unsupportedEntities,
       unknownEntityCount: converted?.stats?.unknownEntityCount || 0
