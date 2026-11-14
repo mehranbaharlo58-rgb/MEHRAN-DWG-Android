@@ -25,6 +25,8 @@ jobs:
         run: yes | sdkmanager --licenses && sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - run: npm install
         working-directory: mehran-dwg
+      - run: npm test
+        working-directory: mehran-dwg
       - run: npm run build
         working-directory: mehran-dwg
       - run: npx cap add android
