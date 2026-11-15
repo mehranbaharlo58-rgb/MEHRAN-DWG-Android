@@ -23,7 +23,8 @@ jobs:
       - name: Test native DWG round-trip engine
         run: cargo test --manifest-path dwg-engine/Cargo.toml
       - name: Build offline DWG WebAssembly engine
-        run: wasm-pack build dwg-engine --target web --release --out-dir ../mehran-dwg/public/dwg-engine --out-name engine
+        run: wasm-pack build --target web --release --out-dir ../mehran-dwg/public/dwg-engine --out-name engine
+        working-directory: dwg-engine
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - uses: actions/setup-java@v4
