@@ -3,7 +3,8 @@ let enginePromise;
 async function getEngine() {
   if (!enginePromise) {
     enginePromise = (async () => {
-      const engine = await import(/* @vite-ignore */ '/dwg-engine/engine.js');
+      const engineUrl = `${import.meta.env.BASE_URL}dwg-engine/engine.js`;
+      const engine = await import(/* @vite-ignore */ engineUrl);
       await engine.default();
       return engine;
     })();
