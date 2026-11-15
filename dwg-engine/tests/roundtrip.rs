@@ -5,7 +5,7 @@ const DXF: &str = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n0\nENDSEC\n0\n
 
 #[test]
 fn dxf_edits_export_to_real_reopenable_dwg() {
-    let mut reader = DxfReader::from_stream(Cursor::new(DXF.as_bytes().to_vec()));
+    let mut reader = DxfReader::from_reader(Cursor::new(DXF.as_bytes().to_vec())).expect("DXF reader initializes");
     let document = reader.read().expect("DXF parses");
     assert_eq!(document.entity_count(), 1);
 
