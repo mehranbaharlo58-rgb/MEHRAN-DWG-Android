@@ -13,7 +13,8 @@ pub fn dxf_to_dwg(dxf_bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
         return Err(JsValue::from_str("DXF input is empty"));
     }
 
-    let mut reader = DxfReader::from_stream(Cursor::new(dxf_bytes.to_vec()));
+    let mut reader = DxfReader::from_reader(Cursor::new(dxf_bytes.to_vec()))
+        .map_err(|e| fail("DXF reader initialization failed", e))?;
     let document = reader.read().map_err(|e| fail("DXF parse failed", e))?;
     let expected = document.entity_count();
     if expected == 0 {
