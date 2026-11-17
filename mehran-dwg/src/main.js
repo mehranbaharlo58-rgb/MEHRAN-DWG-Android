@@ -15,12 +15,12 @@ app.innerHTML=`
   <div class="command-shortcuts">
     <button data-cadcmd="LINE">LINE</button><button data-cadcmd="PLINE">PLINE</button><button data-cadcmd="CIRCLE">CIRCLE</button><button data-cadcmd="RECT">RECT</button><button data-cadcmd="MOVESEL">MOVE</button><button data-cadcmd="ERASE">ERASE</button>
   </div>
-  <div class="command-entry"><span class="command-prompt">命令:</span><input id="cadCommand" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Command: LINE 0,0 100,0"><button id="cadCommandRun" type="button">↵</button></div>
+  <div class="command-entry"><span class="command-prompt">فرمان:</span><input id="cadCommand" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Command: LINE 0,0 100,0"><button id="cadCommandRun" type="button">↵</button></div>
 </section>
 <nav class="toolbar" id="tools"><button class="tool active" data-tool="pan"><i>✥</i>جابجایی</button><button class="tool" data-tool="select"><i>⌖</i>انتخاب</button><button class="tool" data-tool="draw"><i>✎</i>ترسیم</button><button class="tool" data-tool="line"><i>／</i>خط</button><button class="tool" data-tool="polyline"><i>⌁</i>چندخطی</button><button class="tool" data-tool="circle"><i>◯</i>دایره</button><button class="tool" data-tool="arc"><i>⌒</i>کمان</button><button class="tool" data-tool="rectangle"><i>▭</i>مستطیل</button><button class="tool" data-tool="text"><i>T</i>متن</button><button class="tool" data-tool="dimension"><i>↔</i>اندازه‌گذاری</button><button class="tool" data-tool="measure"><i>⌁</i>اندازه‌گیری</button><button class="tool" data-tool="layers"><i>▤</i>لایه‌ها</button><button class="tool" data-tool="more"><i>＋</i>بیشتر</button></nav>
 <footer class="bottom"><span id="mode">MODEL · LOCAL</span><span id="scale">1:1</span><span id="units">واحد: متر</span></footer>
 <div class="sheet" id="sheet"><section class="panel"><div class="panelhead"><h3 id="paneltitle">منو</h3><button class="close" id="close">×</button></div><div id="panelbody"></div></section></div><div class="toast" id="toast"></div>
-<div class="loading-overlay" id="loadingOverlay" aria-live="polite" style="display:none">
+<div class="loading-overlay" id="loadingOverlay" aria-live="polite" style="display:flex">
   <div class="loading-card"><strong id="loadingTitle">در حال آماده‌سازی</strong><div class="loading-track"><span id="loadingBar"></span></div><div class="loading-meta"><span id="loadingMessage">لطفاً صبر کنید…</span><b id="loadingPercent">0%</b></div></div>
 </div>
 <input class="fileinput" type="file" id="file" accept=".dwg,.dxf,.json,application/acad,application/octet-stream">
@@ -103,7 +103,7 @@ canvas.addEventListener('pointermove',e=>{
   }
   if(!gesture){const raw=world(localPoint(e)),snap=snapPoint(raw),p=snap.point;state.snapIndicator=snap.type?snap:null;$('#coords').textContent='X: '+p.x.toFixed(3)+' · Y: '+p.y.toFixed(3)+(snap.type?' · '+snap.type:'');draw();return}
   const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
-  if(Math.abs(dx)+Math.abs(dy)>4)gesture.moved=true;
+  if(Math.hypot(dx,dy)>9)gesture.moved=true;
   if(state.tool==='pan'){state.offset.x=gesture.ox+dx;state.offset.y=gesture.oy+dy;draw()}
 });
 canvas.addEventListener('pointerup',e=>{
@@ -241,4 +241,9 @@ document.querySelectorAll('[data-cadcmd]').forEach(b=>b.addEventListener('click'
 $('#close').onclick=closeSheet;$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
 $('#undo').onclick=undo;$('#redo').onclick=redo;
 $('#tools').addEventListener('contextmenu',e=>e.preventDefault());
-await initDB();resize();refresh();
+setLoading(12,'راه‌اندازی محیط ترسیم…','در حال بارگذاری برنامه');
+await initDB();
+setLoading(76,'آماده‌سازی صفحه نقشه و ابزارها…','در حال بارگذاری برنامه');
+resize();refresh();
+setLoading(100,'برنامه آماده است','بارگذاری برنامه کامل شد');
+setTimeout(hideLoading,450);
