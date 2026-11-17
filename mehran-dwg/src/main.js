@@ -44,9 +44,15 @@ function fitDrawingToView(){
     else if(e.type==='CIRCLE'||e.type==='ARC'){const r=Math.abs(Number(e.radius)||0);add({x:e.center.x-r,y:e.center.y-r});add({x:e.center.x+r,y:e.center.y+r})}
     else if(e.type==='ELLIPSE'){const r=Math.max(Math.abs(Number(e.majorAxis)||0),Math.abs(Number(e.minorAxis)||0));add({x:e.center.x-r,y:e.center.y-r});add({x:e.center.x+r,y:e.center.y+r})}
     else if(e.points?.length)e.points.forEach(add);
-    else if(e.point)add(e.point);
+    else if(e.point){
+      add(e.point);
+      if(e.type==='TEXT'){
+        const h=Math.max(.1,Number(e.height)||2.5),w=Math.max(h,Array.from(String(e.text||'')).length*h*.62);
+        add({x:e.point.x+w,y:e.point.y+h});
+      }
+    }
   }
-  if(!points.length&&state.svgBounds){const b=state.svgBounds;add({x:b.x,y:b.y});add({x:b.x+b.width,y:b.y+b.height})}
+  if(state.svgBounds){const b=state.svgBounds;add({x:b.x,y:b.y});add({x:b.x+b.width,y:b.y+b.height})}
   if(!points.length)return;
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
