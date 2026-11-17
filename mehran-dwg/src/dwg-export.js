@@ -77,7 +77,7 @@ export function entitiesToDXF(entities, layers = []) {
   }
 
   out.push(...pair(0, 'ENDSEC'), ...pair(0, 'EOF'));
-  return out.join('\\r\\n') + '\\r\\n';
+  return out.join('\r\n') + '\r\n';
 }
 
 export async function saveEntitiesAsDwg(entities, layers = []) {
