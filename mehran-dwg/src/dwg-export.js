@@ -1,9 +1,16 @@
 let enginePromise;
 
+export function resolveDwgEngineUrl(baseUrl, documentBaseUrl) {
+  if (typeof baseUrl !== 'string' || typeof documentBaseUrl !== 'string') {
+    throw new TypeError('DWG engine URL requires the Vite base URL and document base URL.');
+  }
+  return new URL(`${baseUrl}dwg-engine/engine.js`, documentBaseUrl).href;
+}
+
 async function getEngine() {
   if (!enginePromise) {
     enginePromise = (async () => {
-      const engineUrl = `${import.meta.env.BASE_URL}dwg-engine/engine.js`;
+      const engineUrl = resolveDwgEngineUrl(import.meta.env.BASE_URL, document.baseURI);
       const engine = await import(/* @vite-ignore */ engineUrl);
       await engine.default();
       return engine;
@@ -70,7 +77,7 @@ export function entitiesToDXF(entities, layers = []) {
   }
 
   out.push(...pair(0, 'ENDSEC'), ...pair(0, 'EOF'));
-  return out.join('\r\n') + '\r\n';
+  return out.join('\\r\\n') + '\\r\\n';
 }
 
 export async function saveEntitiesAsDwg(entities, layers = []) {
