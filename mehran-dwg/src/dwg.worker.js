@@ -4,6 +4,7 @@
  */
 import { Dwg_File_Type, LibreDwg } from '@mlightcad/libredwg-web';
 import { ENGINE_DESCRIPTOR } from './engine/contract.js';
+import { normalizeCadText } from './cad-text.js';
 
 let enginePromise;
 function getEngine() {
@@ -38,16 +39,6 @@ function bufferToBase64(buffer) {
   return btoa(binary);
 }
 
-function normalizeCadText(value) {
-  return String(value ?? '')
-    .replace(/\\U\+([0-9a-fA-F]{4,6})/g, (_, hex) => {
-      const code = Number.parseInt(hex, 16);
-      return code <= 0x10ffff ? String.fromCodePoint(code) : '';
-    })
-    .replace(/%%[dD]/g, '°').replace(/%%[pP]/g, '±').replace(/%%[cC]/g, '⌀')
-    .replace(/\\P/g, '\n').replace(/\\~/g, ' ')
-    .replace(/[{}]/g, '');
-}
 const verticesOf = (entity) => {
   const vertices = entity.vertices || entity.points || [];
   return Array.isArray(vertices) ? vertices.map(v => point(v.location || v.point || v)) : [];
