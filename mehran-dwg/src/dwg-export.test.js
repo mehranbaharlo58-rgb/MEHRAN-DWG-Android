@@ -42,11 +42,11 @@ test('CAD text normalizer repairs UTF-8 bytes misread as Latin-1', () => {
 });
 
 test('CAD text normalizer expands Unicode and MTEXT controls', () => {
-  assert.equal(normalizeCadText('A\\\\U+0628\\\\P B %%d'), 'Aب\\n B °');
+  assert.equal(normalizeCadText('A\\U+0628\\P B %%d'), 'Aب\n B °');
 });
 
 test('DXF reader honors the declared Windows-1256 codepage', () => {
-  const prefix = new TextEncoder().encode('0\\r\\nSECTION\\r\\n9\\r\\n$DWGCODEPAGE\\r\\n3\\r\\nANSI_1256\\r\\n1\\r\\n');
+  const prefix = new TextEncoder().encode('0\r\nSECTION\r\n9\r\n$DWGCODEPAGE\r\n3\r\nANSI_1256\r\n1\r\n');
   const bytes = new Uint8Array(prefix.length + 1);
   bytes.set(prefix);
   bytes[bytes.length - 1] = 0xe3;
