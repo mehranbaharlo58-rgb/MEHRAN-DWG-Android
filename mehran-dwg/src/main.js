@@ -74,7 +74,50 @@ function redo(){if(!state.redoStack.length){toast('عملیات قابل انج�
 function addEntity(entity){pushUndo();state.entities.push(entity);draw();saveCurrent()}
 function screen(p){return{x:canvas.clientWidth/2+state.offset.x+p.x*state.scale,y:canvas.clientHeight/2+state.offset.y-p.y*state.scale}}
 function lineIntersection(a,b,c,d){const den=(a.x-b.x)*(c.y-d.y)-(a.y-b.y)*(c.x-d.x);if(Math.abs(den)<1e-10)return null;const t=((a.x-c.x)*(c.y-d.y)-(a.y-c.y)*(c.x-d.x))/den,u=-((a.x-b.x)*(a.y-c.y)-(a.y-b.y)*(a.x-c.x))/den;if(t<0||t>1||u<0||u>1)return null;return{x:a.x+t*(b.x-a.x),y:a.y+t*(b.y-a.y)}}
-function snapPoint(p){if(!state.snapEnabled)return{point:p,type:''};const tol=14/state.scale,candidates=[];const put=(q,type)=>{if(q&&Number.isFinite(q.x)&&Number.isFinite(q.y)){const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<=tol)candidates.push({point:q,type,d})}};const segments=[];for(const e of state.entities){if(e.type==='LINE'){put(e.start,'END');put(e.end,'END');put({x:(e.start.x+e.end.x)/2,y:(e.start.y+e.end.y)/2},'MID');segments.push([e.start,e.end])}else if(e.points?.length){e.points.forEach((q,i)=>{put(q,'END');if(i<e.points.length-1){const n=e.points[i+1];put({x:(q.x+n.x)/2,y:(q.y+n.y)/2},'MID');segments.push([q,n])}});if(e.closed&&e.points.length>2)segments.push([e.points[e.points.length-1],e.points[0]])}else if(e.type==='CIRCLE'||e.type==='ARC'){put(e.center,'CEN');const r=Number(e.radius)||0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])put({x:e.center.x+dx*r,y:e.center.y+dy*r},'QUAD');if(e.type==='ARC'){for(const angle of [e.startAngle,e.endAngle]){const rad=Number(angle||0)*Math.PI/180;put({x:e.center.x+Math.cos(rad)*r,y:e.center.y+Math.sin(rad)*r},'END')}}} }for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++)put(lineIntersection(...segments[i],...segments[j]),'INT');candidates.sort((a,b)=>a.d-b.d);return candidates[0]||{point:p,type:''}}
+function snapPoint(p){
+  if(!state.snapEnabled)return{point:p,type:''};
+  const tol=14/state.scale,candidates=[],segments=[];
+  const put=(q,type)=>{if(q&&Number.isFinite(q.x)&&Number.isFinite(q.y)){const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<=tol)candidates.push({point:q,type,d})}};
+  const addNearbySegment=(a,b)=>{
+    if(Math.max(a.x,b.x)<p.x-tol||Math.min(a.x,b.x)>p.x+tol||Math.max(a.y,b.y)<p.y-tol||Math.min(a.y,b.y)>p.y+tol)return;
+    if(segments.length<160)segments.push([a,b]);
+  };
+  for(const e of state.entities){
+    if(e.type==='LINE'){
+      put(e.start,'END');put(e.end,'END');
+      put({x:(e.start.x+e.end.x)/2,y:(e.start.y+e.end.y)/2},'MID');
+      addNearbySegment(e.start,e.end);
+    }else if(e.points?.length){
+      e.points.forEach((q,i)=>{
+        put(q,'END');
+        if(i<e.points.length-1){
+          const n=e.points[i+1];
+          put({x:(q.x+n.x)/2,y:(q.y+n.y)/2},'MID');
+          addNearbySegment(q,n);
+        }
+      });
+      if(e.closed&&e.points.length>2)addNearbySegment(e.points[e.points.length-1],e.points[0]);
+    }else if(e.type==='CIRCLE'||e.type==='ARC'){
+      put(e.center,'CEN');
+      const r=Number(e.radius)||0;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])put({x:e.center.x+dx*r,y:e.center.y+dy*r},'QUAD');
+      if(e.type==='ARC')for(const angle of [e.startAngle,e.endAngle]){
+        const rad=Number(angle||0)*Math.PI/180;
+        put({x:e.center.x+Math.cos(rad)*r,y:e.center.y+Math.sin(rad)*r},'END');
+      }
+    }
+  }
+  // Intersections are evaluated only among segments whose bounding boxes touch
+  // the cursor tolerance area. Cap the local set to keep pointer handling bounded.
+  if(segments.length<=160){
+    for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++){
+      const q=lineIntersection(...segments[i],...segments[j]);
+      if(q)put(q,'INT');
+    }
+  }
+  candidates.sort((a,b)=>a.d-b.d);
+  return candidates[0]||{point:p,type:''};
+}
 function constrainPoint(origin,p){if(!state.orthoEnabled||!origin)return p;return Math.abs(p.x-origin.x)>=Math.abs(p.y-origin.y)?{...p,y:origin.y}:{...p,x:origin.x}}
 function parseCoordinate(token,base={x:0,y:0}){const t=String(token||'').trim();if(!t)return null;const relative=t.startsWith('@'),v=relative?t.slice(1):t;let x,y;if(v.includes('<')){const [distance,angle]=v.split('<').map(Number);if(!Number.isFinite(distance)||!Number.isFinite(angle))return null;const rad=angle*Math.PI/180;x=distance*Math.cos(rad);y=distance*Math.sin(rad)}else{const parts=v.split(',').map(Number);if(parts.length!==2||!parts.every(Number.isFinite))return null;[x,y]=parts}return relative?{x:base.x+x,y:base.y+y}:{x,y}}
 function mapEntityGeometry(entity,fn,scaleFactor=1){const e=entity;if(e.type==='LINE'){e.start=fn(e.start);e.end=fn(e.end)}else if(e.center){e.center=fn(e.center);if(Number.isFinite(e.radius))e.radius*=scaleFactor;if(Number.isFinite(e.majorAxis))e.majorAxis*=scaleFactor;if(Number.isFinite(e.minorAxis))e.minorAxis*=scaleFactor}else if(e.points)e.points=e.points.map(fn);else if(e.point)e.point=fn(e.point);return e}
@@ -108,7 +151,7 @@ canvas.addEventListener('pointermove',e=>{
     }
     return;
   }
-  if(!gesture){const raw=world(localPoint(e)),snap=snapPoint(raw),p=snap.point;state.snapIndicator=snap.type?snap:null;$('#coords').textContent='X: '+p.x.toFixed(3)+' · Y: '+p.y.toFixed(3)+(snap.type?' · '+snap.type:'');draw();return}
+  if(!gesture){const raw=world(localPoint(e)),snap=state.tool==='pan'?{point:raw,type:''}:snapPoint(raw),p=snap.point;state.snapIndicator=snap.type?snap:null;$('#coords').textContent='X: '+p.x.toFixed(3)+' · Y: '+p.y.toFixed(3)+(snap.type?' · '+snap.type:'');draw();return}
   const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
   if(Math.hypot(dx,dy)>9)gesture.moved=true;
   if(state.tool==='pan'){state.offset.x=gesture.ox+dx;state.offset.y=gesture.oy+dy;draw()}
