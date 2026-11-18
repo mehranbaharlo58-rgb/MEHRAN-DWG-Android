@@ -4,6 +4,7 @@
  */
 import { Dwg_File_Type, LibreDwg } from '@mlightcad/libredwg-web';
 import { ENGINE_DESCRIPTOR } from './engine/contract.js';
+import { normalizeCadText } from './cad-text.js';
 
 let enginePromise;
 function getEngine() {
@@ -91,13 +92,13 @@ function toViewerEntity(entity) {
       return {
         ...base, type,
         point: point(entity.startPoint || entity.insertionPoint || entity.position),
-        text: String(entity.text || entity.defaultText || '')
+        text: normalizeCadText(entity.text || entity.defaultText || '')
       };
     case 'MTEXT':
       return {
         ...base, type: 'TEXT',
         point: point(entity.insertionPoint || entity.startPoint || entity.position),
-        text: String(entity.text || '')
+        text: normalizeCadText(entity.text || '')
       };
     case 'LWPOLYLINE': {
       const points = verticesOf(entity);
@@ -122,12 +123,15 @@ self.onmessage = async (event) => {
       throw new Error('فایل DWG معتبر یا کامل نیست.');
     }
 
+    self.postMessage({id,progress:18,message:'بارگذاری موتور WebAssembly…'});
     engine = await getEngine();
+    self.postMessage({id,progress:38,message:'خواندن ساختار فایل DWG…'});
     dwgPointer = engine.dwg_read_data(buffer, Dwg_File_Type.DWG);
     if (!dwgPointer) {
       throw new Error('موتور LibreDWG نتوانست فایل را بخواند. ممکن است نسخه فایل یا خود فایل پشتیبانی نشود.');
     }
 
+    self.postMessage({id,progress:62,message:'تبدیل موجودیت‌های نقشه…'});
     const converted = typeof engine.convertEx === 'function'
       ? engine.convertEx(dwgPointer)
       : { database: engine.convert(dwgPointer), stats: { unknownEntityCount: 0 } };
@@ -144,6 +148,7 @@ self.onmessage = async (event) => {
       console.warn('SVG preview unavailable', error);
     }
 
+    self.postMessage({id,progress:78,message:'استخراج خطوط، قوس‌ها، متن و لایه‌ها…'});
     const entities = database.entities.map(toViewerEntity).filter(Boolean);
     const layers = [...new Set(database.entities.map(e => e.layer || '0'))]
       .map(name => ({ name, visible: true }));
@@ -155,6 +160,7 @@ self.onmessage = async (event) => {
     engine.dwg_free(dwgPointer);
     dwgPointer = null;
 
+    self.postMessage({id,progress:92,message:'آماده‌سازی نمایش نقشه…'});
     self.postMessage({
       id, ok: true, fileName, entities, layers, nativeDatabase: null, svg, engine: ENGINE_DESCRIPTOR,
       sourceDwgBase64: bufferToBase64(buffer),
