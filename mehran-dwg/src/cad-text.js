@@ -1,11 +1,25 @@
 export function normalizeCadText(value) {
   let text = String(value ?? '')
-    .replace(/\\U\+([0-9a-fA-F]{4,6})/g, (_, hex) => {
+    // Unicode escape sequences used by CAD text entities.
+    .replace(/\\U\\+([0-9a-fA-F]{4,6})/g, (_, hex) => {
       const code = Number.parseInt(hex, 16);
       return code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : '';
     })
+    // Common DXF/AutoCAD symbols.
     .replace(/%%[dD]/g, '°').replace(/%%[pP]/g, '±').replace(/%%[cC]/g, '⌀')
-    .replace(/\\P/g, '\n').replace(/\\~/g, ' ')
+    // MTEXT paragraph and non-breaking-space controls.
+    .replace(/\\P/g, '\n').replace(/\\~/g, '\u00a0')
+    // Flatten stacked fractions while retaining their visible numerator/denominator.
+    .replace(/\\S([^;]*);/g, (_, value) => value.replace(/[\\^#]/g, '/'))
+    // Remove formatting controls (font, height, width, tracking, oblique, color,
+    // alignment and paragraph settings) but retain the text that follows them.
+    .replace(/\\[ACFHQWcHQTt](?:[^;]*);/g, '')
+    .replace(/\\p[^;]*;/gi, '')
+    // Toggle controls do not carry visible text.
+    .replace(/\\[LlOoKk]/g, '')
+    // Escaped braces/backslashes are literal characters.
+    .replace(/\\([{}\\])/g, '$1')
+    // MTEXT grouping braces are formatting delimiters, not visible glyphs.
     .replace(/[{}]/g, '');
 
   // Some CAD readers expose UTF-8 bytes as Latin-1 characters.
@@ -27,10 +41,10 @@ export function decodeDxfBuffer(buffer) {
     return new TextDecoder('utf-8').decode(bytes.subarray(3));
   }
   const header = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 262144)));
-  const match = header.match(/\$DWGCODEPAGE\s*\r?\n\s*3\s*\r?\n\s*([^\r\n]+)/i);
+  const match = header.match(/\\$DWGCODEPAGE\\s*\\r?\\n\\s*3\\s*\\r?\\n\\s*([^\\r\\n]+)/i);
   const codepage = match?.[1]?.trim().toUpperCase() || '';
   if (codepage === 'UTF-8' || codepage === 'UTF8') return new TextDecoder('utf-8').decode(bytes);
-  const windows = codepage.match(/^ANSI_(\d{3,5})$/);
+  const windows = codepage.match(/^ANSI_(\\d{3,5})$/);
   if (windows) {
     try { return new TextDecoder('windows-' + windows[1]).decode(bytes); }
     catch { /* fall through to UTF-8 */ }
